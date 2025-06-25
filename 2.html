@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Goku's Kamehameha</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background-color: #000;
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        height: 100vh;
+        cursor: pointer;
+      }
+
+      #animation-container {
+        position: relative;
+        width: 100%;
+        height: 50vh;
+      }
+
+      .kamehameha-beam {
+        position: absolute;
+        left: 0;
+        width: 0;
+        height: 10px;
+        background: linear-gradient(
+          90deg,
+          rgba(255, 255, 255, 0.9) 0%,
+          rgba(0, 212, 255, 0.8) 20%,
+          rgba(9, 9, 121, 0.7) 50%,
+          rgba(255, 0, 212, 0.6) 100%
+        );
+        border-radius: 0 50% 50% 0;
+        filter: blur(5px);
+        transform-origin: left center;
+        z-index: 10;
+        opacity: 0;
+      }
+
+      .energy-core {
+        position: absolute;
+        left: 0;
+        width: 0;
+        height: 30px;
+        background: linear-gradient(
+          90deg,
+          rgba(255, 255, 255, 1) 0%,
+          rgba(255, 255, 0, 1) 30%,
+          rgba(255, 100, 0, 1) 100%
+        );
+        border-radius: 0 50% 50% 0;
+        filter: blur(10px);
+        transform-origin: left center;
+        z-index: 15;
+        opacity: 0;
+      }
+
+      .energy-spark {
+        position: absolute;
+        background: white;
+        border-radius: 50%;
+        filter: blur(2px);
+        z-index: 20;
+      }
+
+      .impact-explosion {
+        position: absolute;
+        border-radius: 50%;
+        background: radial-gradient(
+          circle,
+          rgba(255, 255, 255, 1) 0%,
+          rgba(255, 200, 0, 0.8) 30%,
+          rgba(255, 100, 0, 0) 70%
+        );
+        filter: blur(5px);
+        z-index: 5;
+        opacity: 0;
+        transform: scale(0);
+      }
+
+      .screen-flash {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: white;
+        opacity: 0;
+        z-index: 100;
+        pointer-events: none;
+      }
+
+      .energy-particle {
+        position: absolute;
+        background: white;
+        border-radius: 50%;
+        filter: blur(1px);
+        z-index: 8;
+      }
+
+      .aura {
+        position: absolute;
+        left: 0;
+        width: 50px;
+        height: 50px;
+        background: radial-gradient(
+          circle,
+          rgba(0, 212, 255, 0.8) 0%,
+          rgba(9, 9, 121, 0.5) 50%,
+          transparent 70%
+        );
+        border-radius: 50%;
+        filter: blur(10px);
+        z-index: 5;
+        opacity: 0;
+        transform: scale(0);
+      }
+
+      .energy-ball {
+        position: absolute;
+        left: 0;
+        width: 0;
+        height: 0;
+        background: radial-gradient(
+          circle,
+          rgba(255, 255, 255, 1) 0%,
+          rgba(0, 212, 255, 0.9) 30%,
+          rgba(9, 9, 121, 0.8) 60%
+        );
+        border-radius: 50%;
+        filter: blur(15px);
+        transform-origin: center;
+        z-index: 12;
+        opacity: 0;
+        transform: translateX(-50%);
+      }
+
+      .energy-ring {
+        position: absolute;
+        left: 0;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        border: 2px solid rgba(255, 255, 255, 0.8);
+        filter: blur(1px);
+        z-index: 13;
+        opacity: 0;
+        transform: translateX(-50%);
+      }
+
+      .fullscreen-message {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: white;
+        font-family: Arial, sans-serif;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 10px 20px;
+        border-radius: 20px;
+        z-index: 200;
+        opacity: 1;
+        transition: opacity 1s;
+      }
+
+      .fullscreen-message.hide {
+        opacity: 0;
+      }
+
+      /* New sparkle styles */
+      .sparkle {
+        position: absolute;
+        background: white;
+        border-radius: 50%;
+        filter: blur(1px);
+        z-index: 25;
+        opacity: 0;
+        transform: scale(0);
+      }
+
+      .sparkle-trail {
+        position: absolute;
+        background: linear-gradient(
+          90deg,
+          rgba(255, 255, 255, 1) 0%,
+          rgba(255, 255, 255, 0) 100%
+        );
+        height: 2px;
+        transform-origin: left center;
+        z-index: 24;
+        opacity: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="animation-container">
+      <div class="screen-flash"></div>
+      <div class="fullscreen-message">Click to enter fullscreen</div>
+    </div>
+
+    <script>
+      const container = document.getElementById("animation-container");
+      const screenFlash = document.querySelector(".screen-flash");
+      const fullscreenMessage = document.querySelector(".fullscreen-message");
+
+      let isFullscreen = false;
+      let animationPhase = 0;
+      let lastTime = 0;
+      let particles = [];
+      let sparks = [];
+      let auraParticles = [];
+      let sparkles = [];
+      let beamActive = false;
+      let sparkleInterval;
+
+      // Handle fullscreen
+      container.addEventListener("click", async () => {
+        if (!isFullscreen) {
+          try {
+            if (container.requestFullscreen) {
+              await container.requestFullscreen();
+            } else if (container.webkitRequestFullscreen) {
+              await container.webkitRequestFullscreen();
+            } else if (container.msRequestFullscreen) {
+              await container.msRequestFullscreen();
+            }
+
+            container.style.height = "100vh";
+            fullscreenMessage.classList.add("hide");
+            isFullscreen = true;
+            startAnimation();
+          } catch (err) {
+            console.error("Error attempting to enable fullscreen:", err);
+          }
+        }
+      });
+
+      function startAnimation() {
+        createAura();
+        setTimeout(chargeEnergy, 500);
+        setTimeout(createEnergyBall, 1000);
+        setTimeout(fireKamehameha, 1800);
+        setTimeout(impactExplosion, 2800);
+        setTimeout(createContinuousBeam, 3300);
+
+        lastTime = performance.now();
+        requestAnimationFrame(animate);
+      }
+
+      function createEnergyBall() {
+        const energyBall = document.createElement("div");
+        energyBall.className = "energy-ball";
+        energyBall.style.top = `${container.offsetHeight / 2}px`;
+        container.appendChild(energyBall);
+
+        for (let i = 0; i < 3; i++) {
+          const ring = document.createElement("div");
+          ring.className = "energy-ring";
+          ring.style.top = `${container.offsetHeight / 2}px`;
+          container.appendChild(ring);
+
+          ring.animate(
+            [
+              { width: "0px", height: "0px", opacity: 0, marginLeft: "0px" },
+              {
+                width: "60px",
+                height: "60px",
+                opacity: 0.8,
+                marginLeft: "-30px",
+              },
+              {
+                width: "100px",
+                height: "100px",
+                opacity: 0,
+                marginLeft: "-50px",
+              },
+            ],
+            {
+              duration: 800,
+              delay: i * 200,
+              easing: "ease-out",
+            }
+          );
+
+          setTimeout(() => ring.remove(), 800 + i * 200);
+        }
+
+        energyBall.animate(
+          [
+            { width: "0px", height: "0px", opacity: 0, marginLeft: "0px" },
+            {
+              width: "80px",
+              height: "80px",
+              opacity: 0.9,
+              marginLeft: "-40px",
+            },
+          ],
+          {
+            duration: 500,
+            easing: "cubic-bezier(0.2, 0.8, 0.4, 1.2)",
+            fill: "forwards",
+          }
+        );
+
+        setInterval(() => {
+          energyBall.animate(
+            [
+              { transform: "translateX(-50%) scale(1)" },
+              { transform: "translateX(-50%) scale(1.1)" },
+              { transform: "translateX(-50%) scale(1)" },
+            ],
+            {
+              duration: 300,
+              easing: "ease-in-out",
+            }
+          );
+        }, 500);
+
+        screenFlash.animate(
+          [{ opacity: 0 }, { opacity: 0.5 }, { opacity: 0 }],
+          {
+            duration: 300,
+            easing: "ease-out",
+          }
+        );
+
+        return energyBall;
+      }
+
+      function createAura() {
+        for (let i = 0; i < 30; i++) {
+          setTimeout(() => {
+            const aura = document.createElement("div");
+            aura.className = "aura";
+            aura.style.left = "0px";
+            aura.style.top = `${Math.random() * container.offsetHeight}px`;
+            container.appendChild(aura);
+
+            const duration = 800 + Math.random() * 400;
+            const scale = 0.5 + Math.random() * 1.5;
+
+            aura.animate(
+              [
+                { opacity: 0, transform: "scale(0)" },
+                { opacity: 0.7, transform: `scale(${scale})` },
+                { opacity: 0, transform: `scale(${scale * 1.5})` },
+              ],
+              {
+                duration: duration,
+                easing: "cubic-bezier(0.2, 0, 0.8, 1)",
+              }
+            );
+
+            setTimeout(() => aura.remove(), duration);
+          }, i * 50);
+        }
+      }
+
+      function chargeEnergy() {
+        for (let i = 0; i < 50; i++) {
+          setTimeout(() => {
+            const particle = document.createElement("div");
+            particle.className = "energy-particle";
+            particle.style.width = `${2 + Math.random() * 5}px`;
+            particle.style.height = particle.style.width;
+            particle.style.left = "0px";
+            particle.style.top = `${
+              container.offsetHeight / 2 - 25 + Math.random() * 50
+            }px`;
+            container.appendChild(particle);
+
+            particles.push({
+              element: particle,
+              x: 0,
+              y: parseFloat(particle.style.top),
+              vx: 1 + Math.random() * 3,
+              vy: -2 + Math.random() * 4,
+              life: 1000 + Math.random() * 1000,
+            });
+          }, i * 20);
+        }
+
+        screenFlash.animate(
+          [{ opacity: 0 }, { opacity: 0.7 }, { opacity: 0 }],
+          {
+            duration: 300,
+            easing: "ease-out",
+          }
+        );
+      }
+
+      function fireKamehameha() {
+        beamActive = true;
+
+        const existingBall = document.querySelector(".energy-ball");
+        if (existingBall) {
+          existingBall.animate([{ opacity: 0.9 }, { opacity: 0 }], {
+            duration: 200,
+            easing: "ease-out",
+            fill: "forwards",
+          });
+          setTimeout(() => existingBall.remove(), 200);
+        }
+
+        const beam = document.createElement("div");
+        beam.className = "kamehameha-beam";
+        beam.style.top = `${container.offsetHeight / 2 - 5}px`;
+        container.appendChild(beam);
+
+        const core = document.createElement("div");
+        core.className = "energy-core";
+        core.style.top = `${container.offsetHeight / 2 - 15}px`;
+        container.appendChild(core);
+
+        beam.animate(
+          [
+            { width: "0px", opacity: 0 },
+            { width: "0px", opacity: 1 },
+            { width: `${container.offsetWidth}px`, opacity: 0.9 },
+          ],
+          {
+            duration: 300,
+            easing: "cubic-bezier(0.1, 0.8, 0.2, 1)",
+            fill: "forwards",
+          }
+        );
+
+        core.animate(
+          [
+            { width: "0px", opacity: 0 },
+            { width: "0px", opacity: 1 },
+            { width: `${container.offsetWidth}px`, opacity: 0.7 },
+          ],
+          {
+            duration: 300,
+            easing: "cubic-bezier(0.1, 0.8, 0.2, 1)",
+            fill: "forwards",
+          }
+        );
+
+        for (let i = 0; i < 30; i++) {
+          setTimeout(() => {
+            const spark = document.createElement("div");
+            spark.className = "energy-spark";
+            const size = 1 + Math.random() * 4;
+            spark.style.width = `${size}px`;
+            spark.style.height = `${size}px`;
+            spark.style.left = `${Math.random() * container.offsetWidth}px`;
+            spark.style.top = `${
+              container.offsetHeight / 2 - 10 + Math.random() * 20
+            }px`;
+            container.appendChild(spark);
+
+            sparks.push({
+              element: spark,
+              life: 300 + Math.random() * 300,
+            });
+          }, i * 100);
+        }
+
+        // Create continuous sparkles at screen edge
+        sparkleInterval = setInterval(() => {
+          if (beamActive) {
+            createEdgeSparkles();
+          }
+        }, 100);
+
+        screenFlash.animate(
+          [{ opacity: 0 }, { opacity: 0.9 }, { opacity: 0 }],
+          {
+            duration: 200,
+            easing: "ease-out",
+          }
+        );
+      }
+
+      function createEdgeSparkles() {
+        // Create sparkles at the right edge of the screen
+        const x = container.offsetWidth - 10;
+        const y = container.offsetHeight / 2 - 20 + Math.random() * 40;
+        const count = 3 + Math.floor(Math.random() * 5);
+
+        for (let i = 0; i < count; i++) {
+          const sparkle = document.createElement("div");
+          sparkle.className = "sparkle";
+          const size = 2 + Math.random() * 4;
+          sparkle.style.width = `${size}px`;
+          sparkle.style.height = `${size}px`;
+          sparkle.style.left = `${x}px`;
+          sparkle.style.top = `${y}px`;
+          container.appendChild(sparkle);
+
+          if (Math.random() > 0.7) {
+            const trail = document.createElement("div");
+            trail.className = "sparkle-trail";
+            trail.style.left = `${x}px`;
+            trail.style.top = `${y}px`;
+            trail.style.width = "0px";
+            container.appendChild(trail);
+
+            const angle =
+              Math.PI + ((Math.random() * Math.PI) / 2 - Math.PI / 4);
+            const length = 10 + Math.random() * 30;
+
+            sparkles.push({
+              element: sparkle,
+              trail: trail,
+              x: x,
+              y: y,
+              vx: -2 - Math.random() * 3, // Move left from edge
+              vy: -1 + Math.random() * 2,
+              life: 500 + Math.random() * 500,
+              angle: angle,
+              trailLength: length,
+            });
+          } else {
+            sparkles.push({
+              element: sparkle,
+              trail: null,
+              x: x,
+              y: y,
+              vx: -1 - Math.random() * 2, // Move left from edge
+              vy: -0.5 + Math.random() * 1,
+              life: 300 + Math.random() * 300,
+            });
+          }
+
+          sparkle.animate(
+            [
+              { opacity: 0, transform: "scale(0)" },
+              { opacity: 1, transform: "scale(1.5)" },
+              { opacity: 1, transform: "scale(1)" },
+            ],
+            {
+              duration: 200,
+              easing: "ease-out",
+            }
+          );
+        }
+      }
+
+      function impactExplosion() {
+        const explosion = document.createElement("div");
+        explosion.className = "impact-explosion";
+        explosion.style.left = `${container.offsetWidth - 100}px`;
+        explosion.style.top = `${container.offsetHeight / 2 - 50}px`;
+        container.appendChild(explosion);
+
+        explosion.animate(
+          [
+            { width: "0px", height: "0px", opacity: 0, transform: "scale(0)" },
+            {
+              width: "200px",
+              height: "200px",
+              opacity: 0.8,
+              transform: "scale(1)",
+            },
+            {
+              width: "300px",
+              height: "300px",
+              opacity: 0,
+              transform: "scale(1.5)",
+            },
+          ],
+          {
+            duration: 800,
+            easing: "cubic-bezier(0.1, 0.8, 0.2, 1)",
+          }
+        );
+
+        setTimeout(() => explosion.remove(), 800);
+
+        for (let i = 0; i < 50; i++) {
+          const particle = document.createElement("div");
+          particle.className = "energy-particle";
+          const size = 1 + Math.random() * 5;
+          particle.style.width = `${size}px`;
+          particle.style.height = `${size}px`;
+          particle.style.left = `${
+            container.offsetWidth - 50 + Math.random() * 30
+          }px`;
+          particle.style.top = `${
+            container.offsetHeight / 2 - 25 + Math.random() * 50
+          }px`;
+          container.appendChild(particle);
+
+          particles.push({
+            element: particle,
+            x: parseFloat(particle.style.left),
+            y: parseFloat(particle.style.top),
+            vx: -5 + Math.random() * 10,
+            vy: -5 + Math.random() * 10,
+            life: 1000 + Math.random() * 1000,
+          });
+        }
+
+        // Big sparkle burst at impact
+        for (let i = 0; i < 30; i++) {
+          setTimeout(() => {
+            createEdgeSparkles();
+          }, i * 30);
+        }
+      }
+
+      function createContinuousBeam() {
+        setInterval(() => {
+          if (!beamActive) return;
+
+          for (let i = 0; i < 5; i++) {
+            const particle = document.createElement("div");
+            particle.className = "energy-particle";
+            const size = 1 + Math.random() * 3;
+            particle.style.width = `${size}px`;
+            particle.style.height = `${size}px`;
+            particle.style.left = `${Math.random() * container.offsetWidth}px`;
+            particle.style.top = `${
+              container.offsetHeight / 2 - 10 + Math.random() * 20
+            }px`;
+            container.appendChild(particle);
+
+            particles.push({
+              element: particle,
+              x: parseFloat(particle.style.left),
+              y: parseFloat(particle.style.top),
+              vx: 2 + Math.random() * 3,
+              vy: -1 + Math.random() * 2,
+              life: 500 + Math.random() * 500,
+            });
+          }
+
+          if (Math.random() > 0.7) {
+            const fluctuation = document.createElement("div");
+            fluctuation.className = "kamehameha-beam";
+            fluctuation.style.top = `${container.offsetHeight / 2 - 5}px`;
+            fluctuation.style.width = `${container.offsetWidth}px`;
+            fluctuation.style.opacity = "0.7";
+            container.appendChild(fluctuation);
+
+            fluctuation.animate(
+              [
+                { opacity: 0.7, transform: "scaleY(1)" },
+                { opacity: 0, transform: "scaleY(1.3)" },
+              ],
+              {
+                duration: 300,
+                easing: "ease-out",
+              }
+            );
+
+            setTimeout(() => fluctuation.remove(), 300);
+          }
+        }, 100);
+      }
+
+      function animate(currentTime) {
+        const deltaTime = currentTime - lastTime;
+        lastTime = currentTime;
+
+        for (let i = particles.length - 1; i >= 0; i--) {
+          const p = particles[i];
+          p.life -= deltaTime;
+
+          if (p.life <= 0) {
+            p.element.remove();
+            particles.splice(i, 1);
+          } else {
+            p.x += p.vx * (deltaTime / 16);
+            p.y += p.vy * (deltaTime / 16);
+            p.vy += 0.05 * (deltaTime / 16);
+
+            p.element.style.left = `${p.x}px`;
+            p.element.style.top = `${p.y}px`;
+            p.element.style.opacity = `${p.life / 1000}`;
+          }
+        }
+
+        for (let i = sparks.length - 1; i >= 0; i--) {
+          const s = sparks[i];
+          s.life -= deltaTime;
+
+          if (s.life <= 0) {
+            s.element.remove();
+            sparks.splice(i, 1);
+          } else {
+            s.element.style.opacity = `${s.life / 300}`;
+          }
+        }
+
+        for (let i = sparkles.length - 1; i >= 0; i--) {
+          const s = sparkles[i];
+          s.life -= deltaTime;
+
+          if (s.life <= 0) {
+            s.element.remove();
+            if (s.trail) s.trail.remove();
+            sparkles.splice(i, 1);
+          } else {
+            s.x += s.vx * (deltaTime / 16);
+            s.y += s.vy * (deltaTime / 16);
+
+            s.element.style.left = `${s.x}px`;
+            s.element.style.top = `${s.y}px`;
+            s.element.style.opacity = `${s.life / 500}`;
+
+            if (s.trail) {
+              s.trail.style.left = `${s.x}px`;
+              s.trail.style.top = `${s.y}px`;
+              s.trail.style.width = `${s.trailLength}px`;
+              s.trail.style.transform = `rotate(${s.angle}rad)`;
+              s.trail.style.opacity = `${s.life / 500}`;
+            }
+          }
+        }
+
+        requestAnimationFrame(animate);
+      }
+
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "ArrowLeft") {
+          window.location.href = "index.html";
+        }
+      });
+    </script>
+  </body>
+</html>
