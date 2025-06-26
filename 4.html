@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GOKU</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-color: #000;
+      }
+
+      #video-bg {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        z-index: -1;
+      }
+
+      #energy-gif {
+        position: absolute;
+        left: -150px;
+        top: 50vh;
+        transform: translateY(-50%);
+        height: 300px;
+        z-index: 1;
+      }
+    </style>
+  </head>
+  <body onclick="goFullscreen()">
+    <video id="video-bg" autoplay muted loop>
+      <source src="./4BGD.mp4" type="video/mp4" />
+      Your browser does not support the video tag.
+    </video>
+
+    <img id="energy-gif" src="./3KEI.gif" alt="Energy Ball GIF" />
+
+    <script>
+      function goFullscreen() {
+        const elem = document.documentElement;
+        if (elem.requestFullscreen) {
+          elem.requestFullscreen();
+        } else if (elem.webkitRequestFullscreen) {
+          elem.webkitRequestFullscreen(); // Safari
+        } else if (elem.msRequestFullscreen) {
+          elem.msRequestFullscreen(); // IE11
+        }
+      }
+
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "ArrowLeft") {
+          window.location.href = "2.html";
+        }
+      });
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "ArrowRight") {
+          window.location.href = "index.html";
+        }
+      });
+
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "ArrowLeft") {
+          window.location.href = "3.html";
+        }
+      });
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "ArrowRight") {
+          window.location.href = "5.html";
+        }
+      });
+    </script>
+  </body>
+</html>
